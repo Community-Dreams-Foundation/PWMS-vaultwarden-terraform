@@ -1,0 +1,46 @@
+#!/bin/bash
+set -e
+
+# Update system
+apt update -y && apt upgrade -y
+
+# Install Docker
+apt install -y docker.io
+systemctl enable docker
+systemctl start docker
+
+# Create persistent data directory
+mkdir -p /vw-data
+chmod 755 /vw-data
+
+# Run Vaultwarden
+docker run -d \
+  --name vaultwarden \
+  -e ADMIN_TOKEN="${ADMIN_TOKEN}" \
+  -v /vw-data:/data \
+  -p 127.0.0.1:8000:80 \
+  --restart unless-stopped \
+  vaultwarden/server:latest
+
+# Install Caddy
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | tee /etc/apt/sources.list.d/caddy-stable.list
+
+apt update -y
+apt install -y caddy
+
+# Get public IP from GCP metadata service
+PUBLIC_IP=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+
+# Configure Caddy with sslip.io
+cat <<EOF > /etc/caddy/Caddyfile
+$${PUBLIC_IP}.sslip.io {
+  reverse_proxy 127.0.0.1:8000
+}
+EOF
+
+systemctl reload caddy
