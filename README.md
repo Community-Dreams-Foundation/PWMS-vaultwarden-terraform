@@ -797,7 +797,3 @@ This is a personal project created to fulfill specific infrastructure deployment
 **Please note:** Review all code before use. The authors/contributors of this repository cannot be held liable for any issues, losses, or damages that may occur from the use of this infrastructure. This includes, but is not limited to, cloud service provider billing costs, passwords, attachments, and other sensitive information handled by the deployed services.
 
 <br>
-
-## License
-
-MIT License - See LICENSE file for details
